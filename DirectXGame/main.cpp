@@ -4,6 +4,27 @@
 #include <d3dcompiler.h>
 
 using namespace KamataEngine;
+using namespace Microsoft::WRL;
+
+// シェーダーコンパイル関数
+ComPtr<ID3DBlob> CompileShader(const std::wstring& filePath, const std::string& target) {
+	ComPtr<ID3DBlob> shaderBlob = nullptr;
+	ComPtr<ID3DBlob> errorBlob = nullptr;
+
+	// シェーダーファイルを読み込んでコンパイルする
+	HRESULT hr = D3DCompileFromFile(filePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &shaderBlob, &errorBlob);
+
+	// コンパイルに失敗した場合はエラーメッセージを出力してアサート
+	if (FAILED(hr)) {
+		if (errorBlob) {
+			OutputDebugStringA(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+		}
+		assert(false);
+	}
+
+	// コンパイルに成功した場合はシェーダーブロブを返す
+	return shaderBlob;
+}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
@@ -66,46 +87,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	// コンパイル済みのshader,エラー情報を格納するための変数
-	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob = nullptr;    // 頂点シェーダーのバイナリデータ
-	Microsoft::WRL::ComPtr<ID3DBlob> psBlob = nullptr;    // ピクセルシェーダーのバイナリデータ
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr; // エラーメッセージのバイナリデータ
+	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob = CompileShader(L"Resources/Shaders/TestVS.hlsl", "vs_5_0");    // 頂点シェーダーのバイナリデータ
+	assert(vsBlob != nullptr);
 
-	// 頂点シェーダーの読み込むとコンパイル
-	std::wstring vsFile = L"Resources/Shaders/TestVS.hlsl";
-	hr = D3DCompileFromFile(
-	    vsFile.c_str(),                                  // シェーダーコードが記述されたファイル名
-	    nullptr,                                         // コンパイル時の定数バッファに渡すマクロ定義
-	    D3D_COMPILE_STANDARD_FILE_INCLUDE,               // #includeディレクティブの処理方法
-	    "main",                                          // エントリーポイント関数名
-	    "vs_5_0",                                        // シェーダーモデル指定
-	    D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // コンパイルオプション
-	    0, &vsBlob, &errorBlob);
-
-	if (FAILED(hr)) {
-		DebugText::GetInstance()->ConsolePrintf(std::system_category().message(hr).c_str());
-
-		if (errorBlob) {
-			DebugText::GetInstance()->ConsolePrintf(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
-		}
-		assert(false);
-	}
-
-	// ピクセルシェーダーの読み込むとコンパイル
-	std::wstring psFile = L"Resources/Shaders/TestPS.hlsl";
-	hr = D3DCompileFromFile(
-	    psFile.c_str(), // シェーダーファイル名
-	    nullptr,
-	    D3D_COMPILE_STANDARD_FILE_INCLUDE,               // #includeディレクティブの処理方法
-	    "main", "ps_5_0",                                // エントリーポイント関数名とシェーダーモデル指定
-	    D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, // コンパイルオプション
-	    0, &psBlob, &errorBlob);
-	if (FAILED(hr)) {
-		DebugText::GetInstance()->ConsolePrintf(std::system_category().message(hr).c_str());
-		if (errorBlob) {
-			DebugText::GetInstance()->ConsolePrintf(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
-		}
-		assert(false);
-	}
+	Microsoft::WRL::ComPtr<ID3DBlob> psBlob = CompileShader(L"Resources/Shaders/TestPS.hlsl", "ps_5_0");    // ピクセルシェーダーのバイナリデータ
+	assert(psBlob != nullptr);
 
 	// PSOの作成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc = {};
