@@ -186,7 +186,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// 描画前処理
 		dxCommon->PreDraw();
 
-		// ここに描画処理を記述
+		/// ここに描画処理を記述
 
 		// PSOの設定
 		commandList->SetPipelineState(graphicsPipelineState.Get());
