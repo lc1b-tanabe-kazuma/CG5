@@ -1,0 +1,6 @@
+/* Visual Studio Settings File */
+{
+  "languages.cpp.codeStyle.formatting.newLine.newlineControlBlockBrace": "same_line",
+  "languages.cpp.codeStyle.formatting.newLine.newlineNamespaceBrace": "same_line",
+  "languages.cpp.codeStyle.formatting.newLine.newlineTypeBrace": "same_line"
+}
