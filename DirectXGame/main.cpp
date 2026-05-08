@@ -18,6 +18,7 @@ ComPtr<ID3DBlob> CompileShader(const std::wstring& filePath, const std::string& 
 	if (FAILED(hr)) {
 		if (errorBlob) {
 			OutputDebugStringA(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+			errorBlob->Release();
 		}
 		assert(false);
 	}
