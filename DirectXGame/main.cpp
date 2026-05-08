@@ -71,7 +71,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr; // エラーメッセージのバイナリデータ
 
 	// 頂点シェーダーの読み込むとコンパイル
-	std::wstring vsFile = L"Resources/Shaders/TestVS.hlsl";
+	std::wstring vsFile = L"Resources/shaders/TestVS.hlsl";
 	hr = D3DCompileFromFile(
 	    vsFile.c_str(),                                  // シェーダーコードが記述されたファイル名
 	    nullptr,                                         // コンパイル時の定数バッファに渡すマクロ定義
@@ -91,7 +91,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 
 	// ピクセルシェーダーの読み込むとコンパイル
-	std::wstring psFile = L"Resources/Shaders/TestPS.hlsl";
+	std::wstring psFile = L"Resources/shaders/TestPS.hlsl";
 	hr = D3DCompileFromFile(
 	    psFile.c_str(), // シェーダーファイル名
 	    nullptr,
