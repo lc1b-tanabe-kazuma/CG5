@@ -87,10 +87,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
 	// コンパイル済みのshader,エラー情報を格納するための変数
-	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob = CompileShader(L"Resources/Shaders/TestVS.hlsl", "vs_5_0");    // 頂点シェーダーのバイナリデータ
+	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob = CompileShader(L"Resources/shaders/TestVS.hlsl", "vs_5_0");    // 頂点シェーダーのバイナリデータ
 	assert(vsBlob != nullptr);
 
-	Microsoft::WRL::ComPtr<ID3DBlob> psBlob = CompileShader(L"Resources/Shaders/TestPS.hlsl", "ps_5_0");    // ピクセルシェーダーのバイナリデータ
+	Microsoft::WRL::ComPtr<ID3DBlob> psBlob = CompileShader(L"Resources/shaders/TestPS.hlsl", "ps_5_0");    // ピクセルシェーダーのバイナリデータ
 	assert(psBlob != nullptr);
 
 	// PSOの作成
