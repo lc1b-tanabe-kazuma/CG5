@@ -68,7 +68,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// コンパイル済みのshader,エラー情報を格納するための変数
 	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob = nullptr;    // 頂点シェーダーのバイナリデータ
 	Microsoft::WRL::ComPtr<ID3DBlob> psBlob = nullptr;    // ピクセルシェーダーのバイナリデータ
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr; // エラーメッセージのバイナリデータ
 
 	// 頂点シェーダーの読み込むとコンパイル
 	std::wstring vsFile = L"Resources/shaders/TestVS.hlsl";
