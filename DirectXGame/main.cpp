@@ -28,10 +28,10 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT; // 入力レイアウトを使用するフラグ
 
 	Microsoft::WRL::ComPtr<ID3DBlob> rootSignatureBlob = nullptr; // ルートシグネチャのバイナリデータ
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlog = nullptr;         // エラーメッセージのバイナリデータ
-	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob, &errorBlog);
+	Microsoft::WRL::ComPtr<ID3DBlob> errorBlob = nullptr;         // エラーメッセージのバイナリデータ
+	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob, &errorBlob);
 	if (FAILED(hr)) {
-		DebugText::GetInstance()->ConsolePrintf(reinterpret_cast<char*>(errorBlog->GetBufferPointer()));
+		DebugText::GetInstance()->ConsolePrintf(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
 		assert(false);
 	}
 
@@ -44,7 +44,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
 	inputElementDescs[0].SemanticName = "POSITION";                        // 頂点シェーダー側のセマンティクス
 	inputElementDescs[0].SemanticIndex = 0;                                // セマンティクスインデックス
-	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;             // データの形式
+	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;          // データの形式
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT; // 頂点データ内のオフセット値
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;    // 入力要素の配列
