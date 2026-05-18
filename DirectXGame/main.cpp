@@ -66,7 +66,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
 	inputElementDescs[0].SemanticName = "POSITION";                        // 頂点シェーダー側のセマンティクス
 	inputElementDescs[0].SemanticIndex = 0;                                // セマンティクスインデックス
-	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32_FLOAT;             // データの形式
+	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;             // データの形式
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT; // 頂点データ内のオフセット値
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;    // 入力要素の配列
