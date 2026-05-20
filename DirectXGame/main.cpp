@@ -1,31 +1,32 @@
 #include "KamataEngine.h"
+#include "Shader.h"
 #include <Windows.h>
 #include <cassert>
-#include <d3dcompiler.h>
+// #include <d3dcompiler.h>
 
 using namespace KamataEngine;
 using namespace Microsoft::WRL;
 
 // シェーダーコンパイル関数
-ComPtr<ID3DBlob> CompileShader(const std::wstring& filePath, const std::string& target) {
-	ComPtr<ID3DBlob> shaderBlob = nullptr;
-	ComPtr<ID3DBlob> errorBlob = nullptr;
-
-	// シェーダーファイルを読み込んでコンパイルする
-	HRESULT hr = D3DCompileFromFile(filePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &shaderBlob, &errorBlob);
-
-	// コンパイルに失敗した場合はエラーメッセージを出力してアサート
-	if (FAILED(hr)) {
-		if (errorBlob) {
-			OutputDebugStringA(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
-			errorBlob->Release();
-		}
-		assert(false);
-	}
-
-	// コンパイルに成功した場合はシェーダーブロブを返す
-	return shaderBlob;
-}
+// ComPtr<ID3DBlob> CompileShader(const std::wstring& filePath, const std::string& target) {
+//	ComPtr<ID3DBlob> shaderBlob = nullptr;
+//	ComPtr<ID3DBlob> errorBlob = nullptr;
+//
+//	// シェーダーファイルを読み込んでコンパイルする
+//	HRESULT hr = D3DCompileFromFile(filePath.c_str(), nullptr, D3D_COMPILE_STANDARD_FILE_INCLUDE, "main", target.c_str(), D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &shaderBlob, &errorBlob);
+//
+//	// コンパイルに失敗した場合はエラーメッセージを出力してアサート
+//	if (FAILED(hr)) {
+//		if (errorBlob) {
+//			OutputDebugStringA(reinterpret_cast<char*>(errorBlob->GetBufferPointer()));
+//			errorBlob->Release();
+//		}
+//		assert(false);
+//	}
+//
+//	// コンパイルに成功した場合はシェーダーブロブを返す
+//	return shaderBlob;
+//}
 
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
@@ -87,21 +88,24 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// 塗りつぶしモードをソリッドにする
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
 
-	// コンパイル済みのshader,エラー情報を格納するための変数
-	Microsoft::WRL::ComPtr<ID3DBlob> vsBlob = CompileShader(L"Resources/shaders/TestVS.hlsl", "vs_5_0"); // 頂点シェーダーのバイナリデータ
-	assert(vsBlob != nullptr);
+	// 頂点シェーダーの読み込みとコンパイル
+	Shader vsShader;
+	vsShader.Load(L"Resources/shaders/TestVS.hlsl", "vs_5_0");
+	assert(vsShader.GetShaderBlob() != nullptr);
 
-	Microsoft::WRL::ComPtr<ID3DBlob> psBlob = CompileShader(L"Resources/shaders/TestPS.hlsl", "ps_5_0"); // ピクセルシェーダーのバイナリデータ
-	assert(psBlob != nullptr);
+	// ピクセルシェーダーの読み込みとコンパイル
+	Shader psShader;
+	psShader.Load(L"Resources/shaders/TestPS.hlsl", "ps_5_0");
+	assert(psShader.GetShaderBlob() != nullptr);
 
 	// PSOの作成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc = {};
-	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();                       // ルートシグネチャ
-	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;                              // 入力レイアウト
-	graphicsPipelineStateDesc.VS = {vsBlob->GetBufferPointer(), vsBlob->GetBufferSize()}; // 頂点シェーダー
-	graphicsPipelineStateDesc.PS = {psBlob->GetBufferPointer(), psBlob->GetBufferSize()}; // ピクセルシェーダー
-	graphicsPipelineStateDesc.BlendState = blendDesc;                                     // ブレンドステート
-	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;                           // ラスタライザーステート
+	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();                                                           // ルートシグネチャ
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;                                                                  // 入力レイアウト
+	graphicsPipelineStateDesc.VS = {vsShader.GetShaderBlob()->GetBufferPointer(), vsShader.GetShaderBlob()->GetBufferSize()}; // 頂点シェーダー
+	graphicsPipelineStateDesc.PS = {psShader.GetShaderBlob()->GetBufferPointer(), psShader.GetShaderBlob()->GetBufferSize()}; // ピクセルシェーダー
+	graphicsPipelineStateDesc.BlendState = blendDesc;                                                                         // ブレンドステート
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;                                                               // ラスタライザーステート
 
 	// 書き込むRTVの情報
 	graphicsPipelineStateDesc.NumRenderTargets = 1;                       // 書き込むRTVの数
