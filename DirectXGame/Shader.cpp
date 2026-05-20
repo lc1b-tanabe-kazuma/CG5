@@ -8,7 +8,7 @@ using namespace Microsoft::WRL;
 Shader::Shader() {}
 
 // デストラクタ
-Shader::~Shader() { }
+Shader::~Shader() {}
 
 // 生成したコンパイル済みデータを取得する
 void Shader::Load(const std::wstring& filePath, const std::string& shaderModel) {
