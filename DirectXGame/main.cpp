@@ -90,20 +90,20 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// 頂点シェーダーの読み込みとコンパイル
 	Shader vsShader;
-	vsShader.Load(L"Resources/shaders/TestVS.hlsl", "vs_5_0");
-	assert(vsShader.GetShaderBlob() != nullptr);
+	vsShader.LoadDxc(L"Resources/shaders/TestVS.hlsl", L"vs_6_0");
+	assert(vsShader.GetDxcBlob() != nullptr);
 
 	// ピクセルシェーダーの読み込みとコンパイル
 	Shader psShader;
-	psShader.Load(L"Resources/shaders/TestPS.hlsl", "ps_5_0");
-	assert(psShader.GetShaderBlob() != nullptr);
+	psShader.LoadDxc(L"Resources/shaders/TestPS.hlsl", L"ps_6_0");
+	assert(psShader.GetDxcBlob() != nullptr);
 
 	// PSOの作成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc = {};
 	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();                                                           // ルートシグネチャ
 	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;                                                                  // 入力レイアウト
-	graphicsPipelineStateDesc.VS = {vsShader.GetShaderBlob()->GetBufferPointer(), vsShader.GetShaderBlob()->GetBufferSize()}; // 頂点シェーダー
-	graphicsPipelineStateDesc.PS = {psShader.GetShaderBlob()->GetBufferPointer(), psShader.GetShaderBlob()->GetBufferSize()}; // ピクセルシェーダー
+	graphicsPipelineStateDesc.VS = {vsShader.GetDxcBlob()->GetBufferPointer(), vsShader.GetDxcBlob()->GetBufferSize()}; // 頂点シェーダー
+	graphicsPipelineStateDesc.PS = {psShader.GetDxcBlob()->GetBufferPointer(), psShader.GetDxcBlob()->GetBufferSize()}; // ピクセルシェーダー
 	graphicsPipelineStateDesc.BlendState = blendDesc;                                                                         // ブレンドステート
 	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;                                                               // ラスタライザーステート
 
