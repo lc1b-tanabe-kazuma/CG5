@@ -1,3 +1,4 @@
+#include "IndexBuffer.h"
 #include "KamataEngine.h"
 #include "PipelineState.h"
 #include "RootSignature.h"
@@ -66,7 +67,7 @@ void SetupPipelineState(PipelineState& pipelineState, RootSignature& rs, Shader&
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// KamataEngineの初期化
-	KamataEngine::Initialize(L"タイトルバー");
+	KamataEngine::Initialize(L"CG5_LE3D_16_タナベ");
 
 	// DirectXCommonのインスタンスを取得
 	DirectXCommon* dxCommon = DirectXCommon::GetInstance();
@@ -96,16 +97,46 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	PipelineState pipelineState;
 	SetupPipelineState(pipelineState, rs, vsShader, psShader);
 
+	struct VertexData {
+		Vector4 position; // 頂点の位置
+	};
+
+	// 頂点データの準備
+	VertexData vertices[] = {
+	    {-1.0f, -1.0f, 0.0f, 1.0f}, // 0 左下
+	    {-1.0f, 1.0f,  0.0f, 1.0f}, // 1 左上
+	    {1.0f,  -1.0f, 0.0f, 1.0f}, // 2 右下
+	    {1.0f,  1.0f,  0.0f, 1.0f}, // 3 右上
+	};
+
 	/// VertexResourceの作成
 	VertexBuffer vb;
-	vb.Create(sizeof(Vector4) * 3, sizeof(Vector4));
+	vb.Create(sizeof(vertices), sizeof(vertices[0]));
 
-	//// 頂点リソースにデータを書き込む
-	Vector4* vertexData = nullptr;
-	vb.GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&vertexData));
-	vertexData[0] = {-0.5f, -0.5f, 0.0f, 1.0f}; // 頂点1の位置
-	vertexData[1] = {0.0f, 0.5f, 0.0f, 1.0f};   // 頂点2の位置
-	vertexData[2] = {0.5f, -0.5f, 0.0f, 1.0f};  // 頂点3の位置
+	/// 頂点リソースにデータを書き込む
+	Vector4* pGpuVertices = nullptr;
+	vb.GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&pGpuVertices));
+
+	// 頂点リソースをマップして、CPUから書き込めるようにする
+	for (int i = 0; i < _countof(vertices); i++) {
+		pGpuVertices[i] = vertices[i].position;
+	}
+
+	// 頂点データの準備
+	uint16_t indices[] = {0, 1, 2, 2, 1, 3}; // 頂点のインデックス
+
+	// indexBuffer
+	IndexBuffer ib;
+	ib.Create(sizeof(indices), sizeof(indices[0]));
+
+	// 頂点データを書き込む
+	uint16_t* pGpuIndices = nullptr;
+	ib.GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&pGpuIndices));
+
+	// 頂点リソースをマップして、CPUから書き込めるようにする
+	for (int i = 0; i < _countof(indices); i++) {
+		pGpuIndices[i] = indices[i];
+	}
 
 	// メインループ
 	while (true) {
@@ -128,11 +159,14 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// 頂点バッファビューの設定
 		commandList->IASetVertexBuffers(0, 1, vb.GetView());
 
+		// IBVを設定
+		commandList->IASetIndexBuffer(ib.GetView());
+
 		// プリミティブトポロジーの設定
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 		// 描画コマンド
-		commandList->DrawInstanced(3, 1, 0, 0);
+		commandList->DrawIndexedInstanced(_countof(indices), 1, 0, 0, 0);
 
 		// 描画後処理
 		dxCommon->PostDraw();
