@@ -1,4 +1,4 @@
-#include "RootSignatuer.h"
+#include "RootSignature.h"
 #include "MiscUtility.h"
 #include <KamataEngine.h>
 #include <cassert>
@@ -6,11 +6,11 @@
 using namespace Microsoft::WRL;
 using namespace KamataEngine;
 
-RootSignatuer::RootSignatuer() {}
+RootSignature::RootSignature() {}
 
-RootSignatuer::~RootSignatuer() {}
+RootSignature::~RootSignature() {}
 
-void RootSignatuer::Create() {
+void RootSignature::Create() {
 
 	// 既にルートシグネチャが作成されている場合は作成しない
 	if (rootSignature_) {
@@ -39,4 +39,4 @@ void RootSignatuer::Create() {
 	rootSignature_ = rootSignature;
 }
 
-ID3D12RootSignature* RootSignatuer::GetRootSignature() const { return rootSignature_.Get(); }
+ID3D12RootSignature* RootSignature::GetRootSignature() const { return rootSignature_.Get(); }

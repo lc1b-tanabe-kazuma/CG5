@@ -2,7 +2,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 
-class RootSignatuer {
+class RootSignature {
 public:
 	// 生成
 	void Create();
@@ -11,10 +11,10 @@ public:
 	ID3D12RootSignature* GetRootSignature() const;
 
 	// コンストラクタ
-	RootSignatuer();
+	RootSignature();
 
 	// デストラクタ
-	~RootSignatuer();
+	~RootSignature();
 
 private:
 	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature_;
