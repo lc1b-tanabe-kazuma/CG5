@@ -1,4 +1,5 @@
 #include "KamataEngine.h"
+#include "RootSignatuer.h"
 #include "Shader.h"
 #include <Windows.h>
 #include <cassert>
@@ -46,22 +47,8 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	ID3D12GraphicsCommandList* commandList = dxCommon->GetCommandList();
 
 	/// RootSignatureの作成
-	// 構造体にデータを用意する
-	D3D12_ROOT_SIGNATURE_DESC descriptionRootSignature = {};
-	descriptionRootSignature.Flags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT; // 入力レイアウトを使用するフラグ
-
-	Microsoft::WRL::ComPtr<ID3DBlob> rootSignatureBlob = nullptr; // ルートシグネチャのバイナリデータ
-	Microsoft::WRL::ComPtr<ID3DBlob> errorBlog = nullptr;         // エラーメッセージのバイナリデータ
-	HRESULT hr = D3D12SerializeRootSignature(&descriptionRootSignature, D3D_ROOT_SIGNATURE_VERSION_1, &rootSignatureBlob, &errorBlog);
-	if (FAILED(hr)) {
-		DebugText::GetInstance()->ConsolePrintf(reinterpret_cast<char*>(errorBlog->GetBufferPointer()));
-		assert(false);
-	}
-
-	// バイナリを元にルートシグネチャを作成する
-	Microsoft::WRL::ComPtr<ID3D12RootSignature> rootSignature = nullptr;
-	hr = dxCommon->GetDevice()->CreateRootSignature(0, rootSignatureBlob->GetBufferPointer(), rootSignatureBlob->GetBufferSize(), IID_PPV_ARGS(&rootSignature));
-	assert(SUCCEEDED(hr));
+	RootSignatuer rs;
+	rs.Create();
 
 	// InputLayoutの作成
 	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
@@ -100,12 +87,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// PSOの作成
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC graphicsPipelineStateDesc = {};
-	graphicsPipelineStateDesc.pRootSignature = rootSignature.Get();                                                           // ルートシグネチャ
-	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;                                                                  // 入力レイアウト
+	graphicsPipelineStateDesc.pRootSignature = rs.GetRootSignature();                                             // ルートシグネチャ
+	graphicsPipelineStateDesc.InputLayout = inputLayoutDesc;                                                            // 入力レイアウト
 	graphicsPipelineStateDesc.VS = {vsShader.GetDxcBlob()->GetBufferPointer(), vsShader.GetDxcBlob()->GetBufferSize()}; // 頂点シェーダー
 	graphicsPipelineStateDesc.PS = {psShader.GetDxcBlob()->GetBufferPointer(), psShader.GetDxcBlob()->GetBufferSize()}; // ピクセルシェーダー
-	graphicsPipelineStateDesc.BlendState = blendDesc;                                                                         // ブレンドステート
-	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;                                                               // ラスタライザーステート
+	graphicsPipelineStateDesc.BlendState = blendDesc;                                                                   // ブレンドステート
+	graphicsPipelineStateDesc.RasterizerState = rasterizerDesc;                                                         // ラスタライザーステート
 
 	// 書き込むRTVの情報
 	graphicsPipelineStateDesc.NumRenderTargets = 1;                       // 書き込むRTVの数
@@ -120,7 +107,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// PSOの作成
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> graphicsPipelineState = nullptr;
-	hr = dxCommon->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
+	HRESULT hr = dxCommon->GetDevice()->CreateGraphicsPipelineState(&graphicsPipelineStateDesc, IID_PPV_ARGS(&graphicsPipelineState));
 	assert(SUCCEEDED(hr));
 
 	/// VertexResourceの作成
@@ -183,7 +170,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		commandList->SetPipelineState(graphicsPipelineState.Get());
 
 		// ルートシグネチャの設定
-		commandList->SetGraphicsRootSignature(rootSignature.Get());
+		commandList->SetGraphicsRootSignature(rs.GetRootSignature());
 
 		// 頂点バッファビューの設定
 		commandList->IASetVertexBuffers(0, 1, &vertexBufferView);
