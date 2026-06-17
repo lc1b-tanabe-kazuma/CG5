@@ -14,11 +14,15 @@ using namespace Microsoft::WRL;
 void SetupPipelineState(PipelineState& pipelineState, RootSignature& rs, Shader& vs, Shader& ps) {
 
 	// inputElementDescsの作成
-	D3D12_INPUT_ELEMENT_DESC inputElementDescs[1] = {};
+	D3D12_INPUT_ELEMENT_DESC inputElementDescs[2] = {};
 	inputElementDescs[0].SemanticName = "POSITION";                        // 頂点シェーダー側のセマンティクス
 	inputElementDescs[0].SemanticIndex = 0;                                // セマンティクスインデックス
 	inputElementDescs[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;          // データの形式
 	inputElementDescs[0].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT; // 頂点データ内のオフセット値
+	inputElementDescs[1].SemanticName = "TEXCOORD";                        // 頂点シェーダー側のセマンティクス
+	inputElementDescs[1].SemanticIndex = 0;                                // セマンティクスインデックス
+	inputElementDescs[1].Format = DXGI_FORMAT_R32G32_FLOAT;                // データの形式
+	inputElementDescs[1].AlignedByteOffset = D3D12_APPEND_ALIGNED_ELEMENT; // 頂点データ内のオフセット値
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc{};                 // 入力レイアウトの説明構造体
 	inputLayoutDesc.pInputElementDescs = inputElementDescs;    // 入力要素の配列

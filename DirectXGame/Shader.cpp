@@ -83,7 +83,7 @@ void Shader::LoadDxc(const std::wstring& filePath, const std::wstring& shaderMod
 	    shaderModel.c_str(), // シェーダーモデルを指定
 	    L"-Zi",              // デバッグ情報を生成する
 	    L"-Qembed_debug",    // デバッグ情報をシェーダーブロブに埋め込む
-	    L"Od",               // 最適化を無効にする
+	    L"-Od",              // 最適化を無効にする
 	    L"-Zpr",             // プリプロセッサの出力を有効にする
 
 	};
