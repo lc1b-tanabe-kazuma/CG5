@@ -103,14 +103,15 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	struct VertexData {
 		Vector4 position; // 頂点の位置
+		Vector2 texcoord;
 	};
 
 	// 頂点データの準備
 	VertexData vertices[] = {
-	    {-1.0f, -1.0f, 0.0f, 1.0f}, // 0 左下
-	    {-1.0f, 1.0f,  0.0f, 1.0f}, // 1 左上
-	    {1.0f,  -1.0f, 0.0f, 1.0f}, // 2 右下
-	    {1.0f,  1.0f,  0.0f, 1.0f}, // 3 右上
+	    {{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}, // 左下
+	    {{-1.0f, 1.0f, 0.0f, 1.0f},  {0.0f, 0.0f}}, // 左上
+	    {{1.0f, -1.0f, 0.0f, 1.0f},  {1.0f, 1.0f}}, // 右下
+	    {{1.0f, 1.0f, 0.0f, 1.0f},   {1.0f, 0.0f}}, // 右上
 	};
 
 	/// VertexResourceの作成
@@ -118,12 +119,11 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vb.Create(sizeof(vertices), sizeof(vertices[0]));
 
 	/// 頂点リソースにデータを書き込む
-	Vector4* pGpuVertices = nullptr;
+	VertexData* pGpuVertices = nullptr;
 	vb.GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&pGpuVertices));
 
-	// 頂点リソースをマップして、CPUから書き込めるようにする
 	for (int i = 0; i < _countof(vertices); i++) {
-		pGpuVertices[i] = vertices[i].position;
+		pGpuVertices[i] = vertices[i];
 	}
 
 	// 頂点データの準備
