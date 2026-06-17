@@ -130,7 +130,6 @@ ComPtr<ID3D12Resource> CreateDepthStencilResource(ComPtr<ID3D12Device> device, u
 	D3D12_CLEAR_VALUE clearValue;
 	clearValue.Format = DXGI_FORMAT_D32_FLOAT; // クリアする値のフォーマット
 	clearValue.DepthStencil.Depth = 1.0f;      // 深度バッファーをクリアする値
-	clearValue.DepthStencil.Stencil = 0;       // ステンシルバッファーをクリアする値
 
 	// 深度ステンシルバッファーのリソースを作成する
 	ComPtr<ID3D12Resource> depthStencilResource;
@@ -138,7 +137,7 @@ ComPtr<ID3D12Resource> CreateDepthStencilResource(ComPtr<ID3D12Device> device, u
 	    &heapProperties,                      // ヒーププロパティ
 	    D3D12_HEAP_FLAG_NONE,                 // ヒープフラグ
 	    &resourceDesc,                        // リソース記述子
-	    D3D12_RESOURCE_STATE_COMMON,          // 初期リソース状態
+	    D3D12_RESOURCE_STATE_DEPTH_WRITE,     // 初期リソース状態
 	    &clearValue,                          // 最適化されたクリア値
 	    IID_PPV_ARGS(&depthStencilResource)); // 作成されたリソースへのポインタ
 	assert(SUCCEEDED(hr));
@@ -180,15 +179,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	SetupPipelineState(pipelineState, rs, vsShader, psShader);
 
 	struct VertexData {
-		Vector4 position; // 頂点の位置
+		Vector4 position;
+		Vector2 texcoord;
 	};
 
 	// 頂点データの準備
 	VertexData vertices[] = {
-	    {-1.0f, -1.0f, 0.0f, 1.0f}, // 0 左下
-	    {-1.0f, 1.0f,  0.0f, 1.0f}, // 1 左上
-	    {1.0f,  -1.0f, 0.0f, 1.0f}, // 2 右下
-	    {1.0f,  1.0f,  0.0f, 1.0f}, // 3 右上
+	    {{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 1.0f}}, // 左下
+	    {{-1.0f, 1.0f, 0.0f, 1.0f},  {0.0f, 0.0f}}, // 左上
+	    {{1.0f, -1.0f, 0.0f, 1.0f},  {1.0f, 1.0f}}, // 右下
+	    {{1.0f, 1.0f, 0.0f, 1.0f},   {1.0f, 0.0f}}, // 右上
 	};
 
 	/// VertexResourceの作成
@@ -196,12 +196,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	vb.Create(sizeof(vertices), sizeof(vertices[0]));
 
 	/// 頂点リソースにデータを書き込む
-	Vector4* pGpuVertices = nullptr;
+	VertexData* pGpuVertices = nullptr;
 	vb.GetResource()->Map(0, nullptr, reinterpret_cast<void**>(&pGpuVertices));
 
 	// 頂点リソースをマップして、CPUから書き込めるようにする
 	for (int i = 0; i < _countof(vertices); i++) {
-		pGpuVertices[i] = vertices[i].position;
+		pGpuVertices[i] = vertices[i];
 	}
 
 	// 頂点データの準備
@@ -238,10 +238,58 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	assert(SUCCEEDED(hr));
 
 	// CPU側からハンドルを取得
-	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
 
 	/// RTV用のviewの作成
 	device->CreateRenderTargetView(renderTextureResource.Get(), nullptr, rtvHandle);
+
+	/// 深度ステンシルバッファーのリソースの作成
+	ComPtr<ID3D12Resource> depthStencilResource = CreateDepthStencilResource(device, w, h);
+
+	// DSV用のデスクリプタヒープの作成
+	ComPtr<ID3D12DescriptorHeap> dsvHeap;
+	D3D12_DESCRIPTOR_HEAP_DESC dsvHeapDesc = {};
+	dsvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	dsvHeapDesc.NumDescriptors = 1;
+	dsvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	hr = device->CreateDescriptorHeap(&dsvHeapDesc, IID_PPV_ARGS(&dsvHeap));
+	assert(SUCCEEDED(hr));
+
+	// CPU側からハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle(dsvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// DSV用のviewの作成
+	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc = {};
+	dsvDesc.Format = DXGI_FORMAT_D32_FLOAT;
+	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+
+	// DSVHeapの先頭にDSVを作成する
+	device->CreateDepthStencilView(depthStencilResource.Get(), &dsvDesc, dsvHandle);
+
+	// SRV用のデスクリプタヒープの作成
+	ComPtr<ID3D12DescriptorHeap> srvHeap;
+	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
+	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	srvHeapDesc.NumDescriptors = 1;
+	hr = device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
+	assert(SUCCEEDED(hr));
+
+	// CPU側からハンドルを取得
+	D3D12_CPU_DESCRIPTOR_HANDLE srvHandle(srvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	// GPU側からハンドルを取得
+	D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle(srvHeap->GetGPUDescriptorHandleForHeapStart());
+
+	// SRV用のviewの作成
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+
+	// SRVHeapの先頭にSRVを作成する
+	device->CreateShaderResourceView(renderTextureResource.Get(), &srvDesc, srvHandle);
 
 	// メインループ
 	while (true) {
@@ -253,7 +301,49 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// 描画前処理
 		dxCommon->PreDraw();
 
+		// TransitionBarrierをSRVからRTVに変更する
+		D3D12_RESOURCE_BARRIER barrier = {};
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = renderTextureResource.Get();
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		commandList->ResourceBarrier(1, &barrier);
+
+		// レンダーターゲットと深度ステンシルをセット
+		commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, &dsvHandle);
+
+		// Viewportの設定
+		D3D12_VIEWPORT viewport = {};
+		viewport.Width = static_cast<float>(w);
+		viewport.Height = static_cast<float>(h);
+		viewport.MinDepth = 0.0f;
+		viewport.MaxDepth = 1.0f;
+		viewport.TopLeftX = 0.0f;
+		viewport.TopLeftY = 0.0f;
+		commandList->RSSetViewports(1, &viewport);
+
+		// ScissorRectの設定
+		D3D12_RECT scissorRect = {};
+		scissorRect.left = 0;
+		scissorRect.top = 0;
+		scissorRect.right = w;
+		scissorRect.bottom = h;
+		commandList->RSSetScissorRects(1, &scissorRect);
+
+		// 全画面をクリア
+		commandList->ClearRenderTargetView(rtvHandle, kRenderTargetClearColor, 0, nullptr);
+		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+
 		/// ここに描画処理を記述
+
+
+		// TransitionBarrierをRTVからSRVに変更する
+		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
+		commandList->ResourceBarrier(1, &barrier);
 
 		// PSOの設定
 		commandList->SetPipelineState(pipelineState.Get());
