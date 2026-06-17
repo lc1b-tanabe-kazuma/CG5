@@ -67,6 +67,84 @@ void SetupPipelineState(PipelineState& pipelineState, RootSignature& rs, Shader&
 	pipelineState.Create(graphicsPipelineStateDesc);
 }
 
+/// 関数プロトタイプ宣言
+// レンダーテクスチャーリソースの作成
+ComPtr<ID3D12Resource> CreateRenderTextureResource(ComPtr<ID3D12Device> device, uint32_t width, uint32_t height, DXGI_FORMAT clearformat, const FLOAT* clearColor) {
+
+	// 描画先のテクスチャーリソースを作成する
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Width = UINT(width);                             // テクスチャーの幅
+	resourceDesc.Height = UINT(height);                           // テクスチャーの高さ
+	resourceDesc.DepthOrArraySize = 1;                            // 配列サイズ
+	resourceDesc.MipLevels = 1;                                   // ミップレベル数
+	resourceDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;             // フォーマット
+	resourceDesc.SampleDesc.Count = 1;                            // サンプリング数
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;  // 2Dテクスチャー
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET; // レンダーターゲットとして使用可能
+
+	// 利用するヒープの設定
+	D3D12_HEAP_PROPERTIES heapProperties = {};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // デフォルトヒープ
+
+	// クリアヴァリューの設定
+	D3D12_CLEAR_VALUE clearValue;
+	clearValue.Format = clearformat;     // クリアする値のフォーマット
+	clearValue.Color[0] = clearColor[0]; // クリアする値の赤成分
+	clearValue.Color[1] = clearColor[1]; // クリアする値の緑成分
+	clearValue.Color[2] = clearColor[2]; // クリアする値の青成分
+	clearValue.Color[3] = clearColor[3]; // クリアする値のアルファ成分
+
+	// 描画先のテクスチャーリソースを作成する
+	ComPtr<ID3D12Resource> renderTextureResource;
+	HRESULT hr = device->CreateCommittedResource(
+	    &heapProperties,                       // ヒーププロパティ
+	    D3D12_HEAP_FLAG_NONE,                  // ヒープフラグ
+	    &resourceDesc,                         // リソース記述子
+	    D3D12_RESOURCE_STATE_COMMON,           // 初期リソース状態
+	    &clearValue,                           // 最適化されたクリア値
+	    IID_PPV_ARGS(&renderTextureResource)); // 作成されたリソースへのポインタ
+	assert(SUCCEEDED(hr));
+	return renderTextureResource;
+}
+
+/// 関数プロトタイプ宣言
+// depthStencilリソースの作成
+ComPtr<ID3D12Resource> CreateDepthStencilResource(ComPtr<ID3D12Device> device, uint32_t width, uint32_t height) {
+
+	// 深度ステンシルバッファーのリソースを作成する
+	D3D12_RESOURCE_DESC resourceDesc = {};
+	resourceDesc.Width = UINT(width);                             // テクスチャーの幅
+	resourceDesc.Height = UINT(height);                           // テクスチャーの高さ
+	resourceDesc.DepthOrArraySize = 1;                            // 配列サイズ
+	resourceDesc.MipLevels = 1;                                   // ミップレベル数
+	resourceDesc.Format = DXGI_FORMAT_D32_FLOAT;                  // フォーマット
+	resourceDesc.SampleDesc.Count = 1;                            // サンプリング数
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;  // 2Dテクスチャー
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL; // 深度ステンシルとして使用可能
+
+	// 利用するヒープの設定
+	D3D12_HEAP_PROPERTIES heapProperties = {};
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT; // デフォルトヒープ
+
+	// クリアヴァリューの設定
+	D3D12_CLEAR_VALUE clearValue;
+	clearValue.Format = DXGI_FORMAT_D32_FLOAT; // クリアする値のフォーマット
+	clearValue.DepthStencil.Depth = 1.0f;      // 深度バッファーをクリアする値
+	clearValue.DepthStencil.Stencil = 0;       // ステンシルバッファーをクリアする値
+
+	// 深度ステンシルバッファーのリソースを作成する
+	ComPtr<ID3D12Resource> depthStencilResource;
+	HRESULT hr = device->CreateCommittedResource(
+	    &heapProperties,                      // ヒーププロパティ
+	    D3D12_HEAP_FLAG_NONE,                 // ヒープフラグ
+	    &resourceDesc,                        // リソース記述子
+	    D3D12_RESOURCE_STATE_COMMON,          // 初期リソース状態
+	    &clearValue,                          // 最適化されたクリア値
+	    IID_PPV_ARGS(&depthStencilResource)); // 作成されたリソースへのポインタ
+	assert(SUCCEEDED(hr));
+	return depthStencilResource;
+}
+
 // Windowsアプリでのエントリーポイント(main関数)
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
@@ -141,6 +219,29 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	for (int i = 0; i < _countof(indices); i++) {
 		pGpuIndices[i] = indices[i];
 	}
+
+	/// リソースの生成
+	ComPtr<ID3D12Device> device = dxCommon->GetDevice();
+	HRESULT hr;
+
+	// レンダーテクスチャーリソースの作成
+	const FLOAT kRenderTargetClearColor[4] = {1.0f, 0.0f, 0.0f, 1.0f}; // レンダーテクスチャーのクリアカラー
+
+	ComPtr<ID3D12Resource> renderTextureResource = CreateRenderTextureResource(device, w, h, DXGI_FORMAT_R8G8B8A8_UNORM, kRenderTargetClearColor);
+
+	// RTV用のデスクリプタヒープの作成
+	ComPtr<ID3D12DescriptorHeap> rtvHeap;
+	D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
+	rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	rtvHeapDesc.NumDescriptors = 1;
+	hr = device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&rtvHeap));
+	assert(SUCCEEDED(hr));
+
+	// CPU側からハンドルを取得
+	CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(rtvHeap->GetCPUDescriptorHandleForHeapStart());
+
+	/// RTV用のviewの作成
+	device->CreateRenderTargetView(renderTextureResource.Get(), nullptr, rtvHandle);
 
 	// メインループ
 	while (true) {
