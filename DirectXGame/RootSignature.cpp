@@ -42,6 +42,18 @@ void RootSignature::Create() {
 	descriptionRootSignature.NumParameters = _countof(rootParameter);                 // ルートパラメータの数
 
 	// samplerの設定
+	D3D12_STATIC_SAMPLER_DESC staticSamplers[1]{};
+	staticSamplers[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR; // 線形補間
+	staticSamplers[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	staticSamplers[0].ComparisonFunc = D3D12_COMPARISON_FUNC_NEVER;
+	staticSamplers[0].MaxLOD = D3D12_FLOAT32_MAX;
+	staticSamplers[0].ShaderRegister = 0;
+	staticSamplers[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	descriptionRootSignature.pStaticSamplers = staticSamplers;
+	descriptionRootSignature.NumStaticSamplers = _countof(staticSamplers);
 
 	Microsoft::WRL::ComPtr<ID3DBlob> rootSignatureBlob = nullptr; // ルートシグネチャのバイナリデータ
 	Microsoft::WRL::ComPtr<ID3DBlob> errorBlog = nullptr;         // エラーメッセージのバイナリデータ

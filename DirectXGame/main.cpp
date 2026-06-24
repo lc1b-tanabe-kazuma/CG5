@@ -267,19 +267,20 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	device->CreateDepthStencilView(depthStencilResource.Get(), &dsvDesc, dsvHandle);
 
 	// SRV用のデスクリプタヒープの作成
-	ComPtr<ID3D12DescriptorHeap> srvHeap;
+	ID3D12DescriptorHeap* srvDescriptorHeap = nullptr;
 	D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
 	srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	srvHeapDesc.NumDescriptors = 1;
-	hr = device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvHeap));
+
+	hr = device->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&srvDescriptorHeap));
 	assert(SUCCEEDED(hr));
 
 	// CPU側からハンドルを取得
-	D3D12_CPU_DESCRIPTOR_HANDLE srvHandle(srvHeap->GetCPUDescriptorHandleForHeapStart());
+	D3D12_CPU_DESCRIPTOR_HANDLE srvCpuHandle = srvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
 	// GPU側からハンドルを取得
-	D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle(srvHeap->GetGPUDescriptorHandleForHeapStart());
+	D3D12_GPU_DESCRIPTOR_HANDLE srvGpuHandle = srvDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
 
 	// SRV用のviewの作成
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
@@ -289,7 +290,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	srvDesc.Texture2D.MipLevels = 1;
 
 	// SRVHeapの先頭にSRVを作成する
-	device->CreateShaderResourceView(renderTextureResource.Get(), &srvDesc, srvHandle);
+	device->CreateShaderResourceView(renderTextureResource.Get(), &srvDesc, srvCpuHandle);
 
 	// メインループ
 	while (true) {
@@ -297,9 +298,6 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		if (KamataEngine::Update()) {
 			break;
 		}
-
-		// 描画前処理
-		dxCommon->PreDraw();
 
 		// TransitionBarrierをSRVからRTVに変更する
 		D3D12_RESOURCE_BARRIER barrier = {};
@@ -337,13 +335,16 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 		/// ここに描画処理を記述
 
-
 		// TransitionBarrierをRTVからSRVに変更する
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+		barrier.Transition.pResource = renderTextureResource.Get();
 		barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 		barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE;
 		commandList->ResourceBarrier(1, &barrier);
+
+		// 描画前処理
+		dxCommon->PreDraw();
 
 		// PSOの設定
 		commandList->SetPipelineState(pipelineState.Get());
@@ -360,7 +361,12 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// プリミティブトポロジーの設定
 		commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-		// 描画コマンド
+		commandList->SetDescriptorHeaps(srvDescriptorHeap->GetDesc().NumDescriptors, &srvDescriptorHeap);
+
+		// SRVのDescriptorTableの先頭を設定
+		commandList->SetGraphicsRootDescriptorTable(0, srvGpuHandle);
+
+		// ポリゴンの描画
 		commandList->DrawIndexedInstanced(_countof(indices), 1, 0, 0, 0);
 
 		// 描画後処理
