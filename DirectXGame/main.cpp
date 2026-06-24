@@ -4,6 +4,7 @@
 #include "RootSignature.h"
 #include "Shader.h"
 #include "VertexBuffer.h"
+#include "WorldTransformEx.h"
 #include <Windows.h>
 #include <cassert>
 
@@ -292,12 +293,29 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// SRVHeapの先頭にSRVを作成する
 	device->CreateShaderResourceView(renderTextureResource.Get(), &srvDesc, srvCpuHandle);
 
+	// ゲーム用の変数初期化
+	Model* model = Model::CreateFromOBJ("terrain");
+
+	WorldTransformEx worldTransform;
+	worldTransform.Initialize();
+	worldTransform.scale_ = {1.1f, 1.1f, 1.1f};
+
+	// カメラの生成
+	Camera camera;
+	camera.Initialize();
+	camera.translation_ = {0.0f, 1.0f, 0.0f};
+
 	// メインループ
 	while (true) {
 		// エンジンの更新
 		if (KamataEngine::Update()) {
 			break;
 		}
+
+		// 更新処理
+		worldTransform.rotation_.y += 0.001f;
+		worldTransform.UpdateMatrix();
+		camera.UpdateMatrix();
 
 		// TransitionBarrierをSRVからRTVに変更する
 		D3D12_RESOURCE_BARRIER barrier = {};
@@ -334,6 +352,9 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		commandList->ClearDepthStencilView(dsvHandle, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
 		/// ここに描画処理を記述
+		Model::PreDraw(Model::CullingMode::kBack, Model::BlendMode::kNormal, Model::DepthTestMode::kOn);
+		model->Draw(worldTransform, camera);
+		Model::PostDraw();
 
 		// TransitionBarrierをRTVからSRVに変更する
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -374,6 +395,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	}
 
 	// 解放処理
+	delete model;
 
 	// エンジンの終了処理
 	KamataEngine::Finalize();
