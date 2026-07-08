@@ -29,9 +29,12 @@ void VertexBuffer::Create(const UINT size, const UINT stride) {
 	vertexResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 
 	// 実際に頂点リソースを作成する
-	HRESULT hr =
+	hr =
 	    dxCommon->GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&vertexResource_));
+
+	#ifdef DEBUG
 	assert(SUCCEEDED(hr));
+#endif // DEBUG
 
 	/// VertexBufferViewの作成
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferView = {};

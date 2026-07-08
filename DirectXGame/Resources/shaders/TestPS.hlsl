@@ -12,7 +12,7 @@ PixelShaderOutput main(VertexShaderOutput input)
 {
     PixelShaderOutput output;
     
-    float32_t2 uv = input.texcoord.xy;
+    float32_t2 uv = { input.texcoord.x * 10.0f, input.texcoord.y * 3.0f };
     float32_t4 textureColor = gTexture.Sample(gSampler, uv);
     
     // grayscale

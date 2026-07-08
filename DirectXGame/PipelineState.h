@@ -19,4 +19,5 @@ private:
 
 	// PSO
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState_;
+	HRESULT hr;
 };

@@ -104,7 +104,11 @@ ComPtr<ID3D12Resource> CreateRenderTextureResource(ComPtr<ID3D12Device> device, 
 	    D3D12_RESOURCE_STATE_COMMON,           // 初期リソース状態
 	    &clearValue,                           // 最適化されたクリア値
 	    IID_PPV_ARGS(&renderTextureResource)); // 作成されたリソースへのポインタ
+#ifdef DEBUG
 	assert(SUCCEEDED(hr));
+#else
+	(void)hr;
+#endif
 	return renderTextureResource;
 }
 
@@ -141,7 +145,12 @@ ComPtr<ID3D12Resource> CreateDepthStencilResource(ComPtr<ID3D12Device> device, u
 	    D3D12_RESOURCE_STATE_DEPTH_WRITE,     // 初期リソース状態
 	    &clearValue,                          // 最適化されたクリア値
 	    IID_PPV_ARGS(&depthStencilResource)); // 作成されたリソースへのポインタ
+
+#ifdef DEBUG
 	assert(SUCCEEDED(hr));
+#else
+	(void)hr;
+#endif
 	return depthStencilResource;
 }
 

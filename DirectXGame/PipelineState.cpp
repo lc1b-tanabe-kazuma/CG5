@@ -9,9 +9,10 @@ void PipelineState::Create(D3D12_GRAPHICS_PIPELINE_STATE_DESC& desc) {
 
 	// パイプラインステートの作成
 	Microsoft::WRL::ComPtr<ID3D12PipelineState> pipelineState = nullptr;
-	HRESULT hr = dxCommon->GetDevice()->CreateGraphicsPipelineState(
-		&desc, IID_PPV_ARGS(&pipelineState));
+	hr = dxCommon->GetDevice()->CreateGraphicsPipelineState(&desc, IID_PPV_ARGS(&pipelineState));
+#ifdef DEBUG
 	assert(SUCCEEDED(hr));
+#endif // DEBUG
 
 	// 生成されたパイプラインステートをメンバ変数にセットする
 	pipelineState_ = pipelineState;

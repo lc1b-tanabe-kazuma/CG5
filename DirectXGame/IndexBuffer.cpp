@@ -34,9 +34,11 @@ void IndexBuffer::Create(const UINT size, const UINT stride) {
 	// 実際に頂点リソースを作成する
 	ID3D12Resource* indexResource = nullptr;
 
-	HRESULT hr =
+	hr =
 	    dxCommon->GetDevice()->CreateCommittedResource(&uploadHeapProperties, D3D12_HEAP_FLAG_NONE, &vertexResourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, nullptr, IID_PPV_ARGS(&indexResource));
+#ifdef DEBUG
 	assert(SUCCEEDED(hr));
+#endif // DEBUG
 
 	indexBuffer_ = indexResource;
 

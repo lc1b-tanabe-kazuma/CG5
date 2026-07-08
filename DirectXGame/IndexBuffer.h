@@ -17,4 +17,5 @@ public:
 private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer_;
 	D3D12_INDEX_BUFFER_VIEW indexBufferView_;
+	HRESULT hr;
 };
