@@ -1,3 +1,4 @@
+#include "Imgui.h"
 #include "IndexBuffer.h"
 #include "KamataEngine.h"
 #include "PipelineState.h"
@@ -304,15 +305,25 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// ゲーム用の変数初期化
 	Model* model = Model::CreateFromOBJ("terrain");
+	Model* tankModel = Model::CreateFromOBJ("enemy");
 
 	WorldTransformEx worldTransform;
 	worldTransform.Initialize();
 	worldTransform.scale_ = {1.1f, 1.1f, 1.1f};
 
+	WorldTransformEx worldTransformTank_;
+	worldTransformTank_.Initialize();
+	worldTransformTank_.scale_ = {0.1f, 0.1f, 0.1f};
+
 	// カメラの生成
 	Camera camera;
 	camera.Initialize();
-	camera.translation_ = {0.0f, 1.0f, 0.0f};
+	camera.translation_ = {0.0f, 1.25f, -5.0f};
+
+#ifdef _DEBUG
+	// ImguiManagerのインスタンスを取得
+	ImGuiManager* imguiManager_ = ImGuiManager::GetInstance();
+#endif
 
 	// メインループ
 	while (true) {
@@ -324,6 +335,21 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		// 更新処理
 		worldTransform.rotation_.y += 0.001f;
 		worldTransform.UpdateMatrix();
+		worldTransformTank_.rotation_.y += 0.001f;
+		worldTransformTank_.UpdateMatrix();
+
+#ifdef _DEBUG
+		// Imgui受付開始
+		imguiManager_->Begin();
+
+		ImGui::Begin("Camera");
+		ImGui::SliderFloat3("Camera Position", &camera.translation_.x, -10.0f, 10.0f);
+		ImGui::SliderFloat3("Camera Rotation", &camera.rotation_.x, -3.14f, 3.14f);
+		ImGui::End();
+
+		// Imgui受付終了
+		imguiManager_->End();
+#endif
 		camera.UpdateMatrix();
 
 		// TransitionBarrierをSRVからRTVに変更する
@@ -363,7 +389,13 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 		/// ここに描画処理を記述
 		Model::PreDraw(Model::CullingMode::kBack, Model::BlendMode::kNormal, Model::DepthTestMode::kOn);
 		model->Draw(worldTransform, camera);
+		tankModel->Draw(worldTransformTank_, camera);
 		Model::PostDraw();
+
+#ifdef _DEBUG
+		// Imguiの描画
+		imguiManager_->Draw();
+#endif
 
 		// TransitionBarrierをRTVからSRVに変更する
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
@@ -405,6 +437,7 @@ int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 
 	// 解放処理
 	delete model;
+	delete tankModel;
 
 	// エンジンの終了処理
 	KamataEngine::Finalize();
